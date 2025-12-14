@@ -287,5 +287,158 @@
         
         renderLeads();
     </script>
+    
+<script>
+  // ==== ÉTAT EN MÉMOIRE ====
+  let leads = JSON.parse(localStorage.getItem("x_leads") || "[]");
+
+  // ==== RÉFÉRENCES DOM ====
+  const totalEl = document.querySelectorAll("div, span, p")[2];      // Total Leads
+  const hotEl   = document.querySelectorAll("div, span, p")[4];      // Leads Chauds
+  const avgEl   = document.querySelectorAll("div, span, p")[6];      // Score Moyen
+
+  const inputs  = document.querySelectorAll("input[aria-label]");
+  const nameInput   = inputs[0];
+  const urlInput    = inputs[1];
+  const painInput   = inputs[2];
+  const scoreInput  = document.querySelector('input[aria-label="Score d\'intérêt (1-10)"]');
+  const statusSelect = document.querySelector('select[aria-label="Statut"]');
+  const contextTextarea = document.querySelector("textarea");
+
+  const addBtn   = Array.from(document.querySelectorAll("button, div, span"))
+    .find(n => n.textContent && n.textContent.includes("Ajouter le lead"));
+  const exportBtn = Array.from(document.querySelectorAll("button, div, span"))
+    .find(n => n.textContent && n.textContent.includes("Exporter en CSV"));
+
+  // ==== TABLEAU D'AFFICHAGE ====
+  // On crée un tableau sous le formulaire si inexistant
+  let table = document.getElementById("leads-table");
+  if (!table) {
+    table = document.createElement("table");
+    table.id = "leads-table";
+    table.style.width = "100%";
+    table.style.marginTop = "1.5rem";
+    table.style.borderCollapse = "collapse";
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Profil X</th>
+          <th>Pain point</th>
+          <th>Contexte</th>
+          <th>Score</th>
+          <th>Statut</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const formContainer = contextTextarea.parentElement || document.body;
+    formContainer.appendChild(table);
+  }
+  const tbody = table.querySelector("tbody");
+
+  // ==== FONCTIONS ====
+  function renderTable() {
+    tbody.innerHTML = "";
+    leads.forEach(lead => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${lead.name}</td>
+        <td><a href="${lead.url}" target="_blank">Profil</a></td>
+        <td>${lead.pain}</td>
+        <td>${lead.context}</td>
+        <td>${lead.score}</td>
+        <td>${lead.status}</td>
+        <td>${new Date(lead.createdAt).toLocaleString()}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateStats() {
+    const total = leads.length;
+    const hot   = leads.filter(l => Number(l.score) >= 7).length;
+    const avg   = total
+      ? (leads.reduce((s, l) => s + Number(l.score), 0) / total).toFixed(1)
+      : 0;
+
+    totalEl.textContent = total;
+    hotEl.textContent   = hot;
+    avgEl.textContent   = avg;
+  }
+
+  function save() {
+    localStorage.setItem("x_leads", JSON.stringify(leads));
+  }
+
+  function addLead() {
+    if (!nameInput.value.trim() || !urlInput.value.trim() || !painInput.value.trim()) {
+      alert("Nom, URL et pain point sont obligatoires.");
+      return;
+    }
+
+    const score = Number(scoreInput.value || 5);
+    const lead = {
+      id: Date.now(),
+      name: nameInput.value.trim(),
+      url: urlInput.value.trim(),
+      pain: painInput.value.trim(),
+      context: contextTextarea.value.trim(),
+      score: score,
+      status: statusSelect.value,
+      createdAt: new Date().toISOString()
+    };
+
+    leads.push(lead);
+    save();
+    renderTable();
+    updateStats();
+
+    // Reset léger
+    nameInput.value = "";
+    urlInput.value = "";
+    painInput.value = "";
+    contextTextarea.value = "";
+    scoreInput.value = 5;
+    statusSelect.value = "Nouveau";
+  }
+
+  function exportCSV() {
+    if (!leads.length) {
+      alert("Aucun lead à exporter.");
+      return;
+    }
+    const header = [
+      "id","name","url","pain","context","score","status","createdAt"
+    ];
+    const rows = leads.map(l => [
+      l.id, l.name, l.url, l.pain, l.context.replace(/\n/g, " "),
+      l.score, l.status, l.createdAt
+    ]);
+
+    const csv = [header, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '"')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "x_leads_export.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ==== INIT ====
+  renderTable();
+  updateStats();
+
+  if (addBtn)   addBtn.addEventListener("click", addLead);
+  if (exportBtn) exportBtn.addEventListener("click", exportCSV);
+</script>
+
 </body>
 </html>
