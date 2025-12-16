@@ -301,6 +301,50 @@ Ce repo est open source (MIT). PRs bienvenues !
 
 MIT © 2025 Finance4All
 
+
+## 🐍 Utilisation Python
+
+Le code Python implémente la logique "scanner les posts Instagram et ne garder que ceux qui expriment le pain point ciblé, sur la base d'une liste de mots-clés et d'expressions définie par l'utilisateur".
+
+### Installation
+
+```bash
+git clone https://github.com/MMQR/social-leads-scraper.git
+cd social-leads-scraper
+```
+
+### Utilisation
+
+Lance le pipeline avec :
+
+```bash
+python -m src.main
+```
+
+Tu seras invité à :
+1. Fournir l'URL de ton offre / page de vente
+2. Le script analysera le contenu pour identifier les pain points
+3. Recherchera les posts Instagram correspondants
+4. Filtrera uniquement les posts qui expriment explicitement le pain point
+5. Extraira les comptes cibles (auteurs des posts)
+6. Proposera d'exporter les leads en CSV
+
+### Architecture
+
+```
+src/
+├── social_finder.py    # Module de recherche et filtrage des posts Instagram
+├── scraper.py          # Pipeline principal (analyse offre + extraction leads)
+└── main.py             # Point d'entrée CLI avec export CSV
+```
+
+### Prochaines étapes
+
+1. **Brancher l'API de scraping Instagram** : Remplace `_fetch_instagram_posts_for_keywords()` dans `social_finder.py` par ton provider (Apify, Data365, etc.)
+2. **Brancher l'analyseur de pain points** : Remplace `analyze_offer()` dans `scraper.py` par un appel à un LLM (OpenAI, etc.)
+3. **Ajouter le scraping de commentaires** : Complète `extract_accounts_from_posts()` pour récupérer aussi les commentateurs
+
+
 ---
 
 **Made with 🧠 by Finance4All Team** | Projet Jericho 2025
